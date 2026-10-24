@@ -10,6 +10,15 @@
  * like text color, italics, etc. 
  */
 
-.message { 
+.message {
     color: red;
+}
+
+.partial {
+    background-color: yellow;
+    font-weight: bold;
+}
+
+.used {
+    color: lightgray;
 }

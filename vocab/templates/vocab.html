@@ -54,7 +54,7 @@
   -->
 <div class="row">
   {% for word in g.vocab %}
-    <div class="col-xs-2 text-center"> {{ word }} </div>
+    <div class="col-xs-2 text-center vocab-word" data-word="{{ word }}"> {{ word }} </div>
     {% if loop.index is divisibleby 3 %}
     </div> <!-- row -->
     <div class="row">
@@ -70,7 +70,7 @@
   </div>
   </div><div class="row">
   <div class="col-xs-6 text-center lead">
-    <strong>{{ session.jumble }}</strong>
+    <strong>{% for ch in session.jumble %}<span class="jletter">{{ ch }}</span>{% endfor %}</strong>
   </div>
   </div><div class="row">
   <div class="col-xs-6 text-center">
@@ -80,36 +80,71 @@
 <br />
 <div class="row">
   <div class="col-xs-6 text-center">
-  <form id="entry" method="POST" action="/_check">
+  <form id="entry">
     <label for="attempt">Word:</label>
     <input id="attempt" name="attempt" type="text" width="15"
       autocomplete="off"  autofocus />
-    <input type="submit" name="try" />
   </form>
 </div></div>
 
 <br />
 
-{% if session.matches|length is not equalto 0  %}
 <h2>You found </h2>
 <p id="results">
   {% for match in session.matches %}
   {{ match }} 
   {% endfor %}
 </p>
-{% endif %}
 
+<p id="response"> </p>
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <!-- Mismatch, already found, etc. "flashed" from Python -->
-    {% for message in messages %}
-      <p class="message">{{ message }}</p>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+<script>
+$("#entry").submit(function(event) {
+    event.preventDefault();
+});
 
+function updateDisplay() {
+    var txt = $("#attempt").val().toLowerCase();
+    $(".jletter").removeClass("used");
+    for (var i = 0; i < txt.length; i++) {
+        var ch = txt.charAt(i);
+        var span = $(".jletter").not(".used").filter(function() {
+            return $(this).text() == ch;
+        }).first();
+        if (span.length > 0) {
+            span.addClass("used");
+        } else {
+            txt = txt.slice(0, i);
+            $("#attempt").val(txt);
+            break;
+        }
+    }
+    $(".vocab-word").each(function() {
+        var w = String($(this).data("word"));
+        $(this).toggleClass("partial", txt.length > 0 && w.startsWith(txt));
+    });
+    return txt;
+}
 
+$("#attempt").keyup(function() {
+    var txt = updateDisplay();
+    $.getJSON("/_check", { text: txt },
+      function(data) {
+        if (data.result.success){
+          window.location.href = "/success"
+        } else if (data.result.matched){
+          $("#results").append(txt + " "); 
+          $("#attempt").val("");
+          updateDisplay();
+          $("#response").html("");
+        } else{
+          $("#response").html(data.result.message);
+        }
+           // your logic here, using data.result.matched,
+           // data.result.message, data.result.success
+      });
+});
+  </script>
 
  </div> <!-- container -->
 </body> </html>
